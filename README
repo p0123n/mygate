@@ -1,0 +1,15 @@
+Small wrapper around MySQLdb library. MyGate can get SQL query and save result in csv or return rows. Module supports a
+few databases.
+
+Some examples:
+
+import mygate
+dbase= mygate.init()
+
+# should print version of MySQL server
+print dbase.query('select version()')
+
+# should make file with query result
+# and print filename and count of rows
+print dbase.dump('select version()')
+

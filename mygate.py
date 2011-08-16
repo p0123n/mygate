@@ -28,6 +28,7 @@ class Connection():
         )
         self.connection = connection.cursor()
         self.connection.execute('set names utf8')
+        self.connection.execute('set session time_zone="%s"' % params['tmzn'])
         return self.connection
 
 class Query():

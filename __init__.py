@@ -21,6 +21,7 @@ def init(server = 'localhost'):
     params['user'] = str(config.get(server, 'user'))
     params['pass'] = str(config.get(server, 'pass'))
     params['name'] = str(config.get(server, 'name'))
+    params['tmzn'] = str(config.get(server, 'tmzn'))
 
     return MyGate(params)
 

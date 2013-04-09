@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 #-*- coding:utf-8 -*-
 __author__ = 'p0123n'
 
@@ -16,6 +17,7 @@ def keepSingleConn(cls):
 class Connection():
     def __init__(self):
         self.connection = None
+        self.cursor     = None
 
     def connect(self, params):
         connection = MySQLdb.connect(
@@ -26,25 +28,40 @@ class Connection():
             db          = params['name'],
             cursorclass = params['curs']
         )
-        self.connection = connection.cursor()
-        self.connection.execute('set names utf8')
-        self.connection.execute('set session time_zone="%s"' % params['tmzn'])
-        return self.connection
+        self.cursor = connection.cursor()
+        self.cursor.execute('set names utf8')
+        self.cursor.execute('set session time_zone="%s"' % params['tmzn'])
+        return connection, self.cursor
 
 class Query():
     def __init__(self, params):
         params['curs'] = cursors.SSDictCursor
-        self.connection = Connection().connect(params)
+        self.connection, self.cursor = Connection().connect(params)
 
     def query(self, query):
-        self.connection.execute(query)
+        self.cursor.execute(query)
+        self.connection.commit()
+
+    def __iter__(self):
         for row in self.connection:
             yield row
+
+    def __enter__(self):
+        return self.cursor
+
+    def __ex_t__(self,ext_type,exc_value,traceback):
+        self.connection.close()
+        if isinstance(exc_value, Exception):
+            self.connection.rollback()
+        else:
+            self.connection.commit()
+        self.connection.close()
+
 
 class Dump():
     def __init__(self, params):
         params['curs'] = cursors.SSCursor
-        self.connection = Connection().connect(params)
+        self.connection, self.cursor = Connection().connect(params)
 
     def dump(self, query, filn=None, dirn='.', sep=';', pref='mygate'):
 
@@ -57,10 +74,10 @@ class Dump():
 
         fn = open(filn, 'w')
 
-        self.connection.execute(query)
+        self.cursor.execute(query)
         rows = 0
 
-        for row in self.connection:
+        for row in self.cursor:
             fn.write(sep.join( str(field) for field in row ) + '\n')
             rows += 1
         fn.close()

@@ -1,30 +1,34 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
-__author__ = 'p0123n'
+
+"""Another one lightweight wrapper around MySQLdb.
+"""
 
 from os     import path
-myPath = path.abspath(path.dirname(__file__))
+MYPATH = path.abspath(path.dirname(__file__))
 
 import ConfigParser
-config = ConfigParser.ConfigParser()
-config.readfp(open('%s/mybases.conf'%myPath))
+CONFIG = ConfigParser.ConfigParser()
+CONFIG.readfp(open('%s/mybases.conf' % MYPATH))
 
-from mygate import MyGate
+import mygate.MyGate
 
 # You can switch 'localhost' to any
 # other mostly used data base.
-def init(server = 'localhost'):
+def init(server='localhost'):
+    """Loads config
+    """
     params = dict()
 
-    params['addr'] = str(config.get(server, 'addr'))
-    params['port'] = int(config.get(server, 'port'))
-    params['user'] = str(config.get(server, 'user'))
-    params['pass'] = str(config.get(server, 'pass'))
-    params['name'] = str(config.get(server, 'name'))
-    params['tmzn'] = str(config.get(server, 'tmzn'))
+    params['addr'] = str(CONFIG.get(server, 'addr'))
+    params['port'] = int(CONFIG.get(server, 'port'))
+    params['user'] = str(CONFIG.get(server, 'user'))
+    params['pass'] = str(CONFIG.get(server, 'pass'))
+    params['name'] = str(CONFIG.get(server, 'name'))
+    params['tmzn'] = str(CONFIG.get(server, 'tmzn'))
 
     return MyGate(params)
 
 if __name__ == '__main__':
-    gate = init()
-    print gate.query('select version()')
+    GATE = init()
+    print GATE.query('select version()')

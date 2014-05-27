@@ -1,3 +1,6 @@
+v 3.0
+Reinforced with magic from [torndb](https://github.com/bdarnell/torndb)
+
 v 2.1
 added parameter timezone for DB servers
 

@@ -4,14 +4,14 @@
 """Another one lightweight wrapper around MySQLdb.
 """
 
-from os     import path
+from os import path
 MYPATH = path.abspath(path.dirname(__file__))
 
 import ConfigParser
 CONFIG = ConfigParser.ConfigParser()
 CONFIG.readfp(open('%s/mybases.conf' % MYPATH))
 
-import mygate.MyGate
+from mygate import MyGate
 
 # You can switch 'localhost' to any
 # other mostly used data base.

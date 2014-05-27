@@ -44,8 +44,8 @@ class Connection(object):
         self.connection = None
         self.cursor = None
 
-    @classmethod
-    def get_connection(cls, params):
+    @staticmethod
+    def get_connection(params):
         """ MySQL connection init
         """
         return MySQLdb.connect(
@@ -60,10 +60,12 @@ class Connection(object):
     def connect(self, params):
         """ MySQL connection init
         """
-        self.cursor = self.get_connection(params).cursor()
+        self.cursor = Connection.get_connection(params).cursor()
         self.cursor.execute('set names utf8')
         self.cursor.execute('set session time_zone="%s"' % params['tmzn'])
-        return self.get_connection(params), self.cursor
+        return Connection.get_connection(params), self.cursor
+
+
 
 class Query(object):
     """ Only for small datasets
@@ -72,13 +74,19 @@ class Query(object):
         params['curs'] = cursors.SSDictCursor
         self.connection, self.cursor = Connection().connect(params)
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return 'Query'
+
     def query(self, query):
         """ Only for small datasets
         """
         try:
             self.cursor.execute(query)
         finally:
-            self.cursor.close()
+            self.cursor.close()    
 
     def __iter__(self):
         for row in self.connection:
@@ -93,6 +101,12 @@ class Dump(object):
     def __init__(self, params):
         params['curs'] = cursors.SSCursor
         self.connection, self.cursor = Connection().connect(params)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return 'Dump'
 
     def dump(self, query, options):
         """ Only for huge datasets
@@ -140,22 +154,35 @@ class Dump(object):
 class MyGate(object):
     """ Main class
     """
+
+    actions = {}
+
     def __init__(self, params):
         self._query = None
         self._dump = None
         self._params = params
 
-    def query(self, *args, **kwargs):
-        """ Only for small datasets
-        """
-        self._query = self._query or Query(self._params)
-        return self._query.query(*args, **kwargs)
+    def __getattr__(self, action, *args, **kwargs):
+        def function(params):
+            """function"""
+            __object = ''
+            if action not in self.actions:
+                __object = eval("action.title()('"+params+"')")
+                self.actions[action] = __object
+            return self.actions[action](*args, **kwargs)
+        return function
 
-    def dump(self, *args, **kwargs):
-        """ For huge datasets
-        """
-        self._dump = self._dump  or Dump(self._params)
-        return self._dump.dump(*args, **kwargs)
+    # def query(self, *args, **kwargs):
+    #     """ Only for small datasets
+    #     """
+    #     self._query = self._query or Query(self._params)
+    #     return self._query.query(*args, **kwargs)
+
+    # def dump(self, *args, **kwargs):
+    #     """ For huge datasets
+    #     """
+    #     self._dump = self._dump  or Dump(self._params)
+    #     return self._dump.dump(*args, **kwargs)
 
 if __name__ == '__main__':
     print 'Hi.'

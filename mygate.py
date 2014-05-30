@@ -25,7 +25,8 @@ VERSION = "3.0.0"
 VERSION_INFO = (3, 0, 0, 0)
 
 def new(cls, *args, **kwargs):
-    return Query(*args, **kwargs)
+    """new"""
+    return globals()[cls](*args, **kwargs)
 
 def keep_single_conn(cls):
     """ Single connection
@@ -43,6 +44,7 @@ def keep_single_conn(cls):
 class Connection(object):
     """ MySQL connection init
     """
+    params = None
     def __init__(self):
         self.connection = None
         self.cursor = None
@@ -63,10 +65,26 @@ class Connection(object):
     def connect(self, params):
         """ MySQL connection init
         """
-        self.cursor = self.get_connection(params).cursor()
+        self.params = params
+        self.cursor = self.get_connection(self.params).cursor()
         self.cursor.execute('set names utf8')
         self.cursor.execute('set session time_zone="%s"' % params['tmzn'])
         return self.get_connection(params), self.cursor
+
+    def close(self):
+        """Closes this database connection."""
+        if getattr(self, "cursor", None) is not None:
+            self.cursor.close()
+            self.cursor = None
+
+    def reconnect(self):
+        """Closes the existing database connection and re-opens it."""
+        self.close()
+        self.cursor = self.get_connection(self.params).cursor()
+        self.cursor.autocommit(True)
+
+    def __del__(self):
+        self.close()
 
 class Query(object):
     """ Only for small datasets
@@ -113,7 +131,7 @@ class Dump(object):
     def __str__(self):
         return 'Dump'
 
-    def dump(self, query, options):
+    def dump(self, query, options={}):
         """ Only for huge datasets
         """
 
@@ -144,27 +162,24 @@ class Dump(object):
 
         __filename = open(options['filename'], 'w')
 
-        self.cursor.execute(query)
-        rows = 0
-
-        for row in self.cursor:
-            __filename.write(
-                options['separator'].join(str(field) for field in row) + '\n'
-            )
-            rows += 1
-        __filename.close()
-
-        return options['filename'], rows
+        try:
+            self.cursor.execute(query)
+            rows = 0
+            for row in self.cursor:
+                __filename.write(
+                    options['separator'].join(str(field) for field in row)+'\n'
+                )
+                rows += 1
+            __filename.close()
+            return options['filename'], rows
+        finally:
+            self.cursor.close()
 
 class MyGate(object):
     """ Main class
     """
-
     actions = {}
-
     def __init__(self, params):
-        self._query = None
-        self._dump = None
         self._params = params
 
     def __getattr__(self, action, *args, **kwargs):

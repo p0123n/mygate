@@ -32,3 +32,5 @@ def init(server='localhost'):
 if __name__ == '__main__':
     GATE = init()
     print GATE.query('select version()')
+    # print GATE.dump('select version()')
+    # print GATE.migrate('alter table ...')

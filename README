@@ -13,3 +13,4 @@ print dbase.query('select version()')
 # and print filename and count of rows
 print dbase.dump('select version()')
 
+(another)[http://www.codecheese.com/2013/11/mysql-wrappers-for-python/] wrappers list

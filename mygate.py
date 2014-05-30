@@ -24,6 +24,9 @@ except ImportError:
 VERSION = "3.0.0"
 VERSION_INFO = (3, 0, 0, 0)
 
+def new(cls, *args, **kwargs):
+    return Query(*args, **kwargs)
+
 def keep_single_conn(cls):
     """ Single connection
     """
@@ -60,12 +63,10 @@ class Connection(object):
     def connect(self, params):
         """ MySQL connection init
         """
-        self.cursor = Connection.get_connection(params).cursor()
+        self.cursor = self.get_connection(params).cursor()
         self.cursor.execute('set names utf8')
         self.cursor.execute('set session time_zone="%s"' % params['tmzn'])
-        return Connection.get_connection(params), self.cursor
-
-
+        return self.get_connection(params), self.cursor
 
 class Query(object):
     """ Only for small datasets
@@ -85,11 +86,15 @@ class Query(object):
         """
         try:
             self.cursor.execute(query)
+            __buffer = []
+            for row in self.cursor:
+                __buffer.append(row)
+            return __buffer
         finally:
-            self.cursor.close()    
+            self.cursor.close()
 
     def __iter__(self):
-        for row in self.connection:
+        for row in self.cursor:
             yield row
 
     def __enter__(self):
@@ -165,24 +170,11 @@ class MyGate(object):
     def __getattr__(self, action, *args, **kwargs):
         def function(params):
             """function"""
-            __object = ''
             if action not in self.actions:
-                __object = eval("action.title()('"+params+"')")
-                self.actions[action] = __object
-            return self.actions[action](*args, **kwargs)
+                self.actions[action] = new(action.title(), self._params)
+            method = getattr(self.actions[action], action)
+            return method(params)
         return function
-
-    # def query(self, *args, **kwargs):
-    #     """ Only for small datasets
-    #     """
-    #     self._query = self._query or Query(self._params)
-    #     return self._query.query(*args, **kwargs)
-
-    # def dump(self, *args, **kwargs):
-    #     """ For huge datasets
-    #     """
-    #     self._dump = self._dump  or Dump(self._params)
-    #     return self._dump.dump(*args, **kwargs)
 
 if __name__ == '__main__':
     print 'Hi.'
